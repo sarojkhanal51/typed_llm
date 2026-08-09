@@ -1,0 +1,28 @@
+# Dart/Pub related
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+/build/
+/coverage/
+pubspec.lock
+# Published libraries shouldn't lock; the example app should, for repro.
+!/packages/example/pubspec.lock
+
+# Generated source
+*.g.dart
+*.freezed.dart
+**/doc/api/
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+
+# OS
+.DS_Store
+
+# Local tooling state, not part of the package
+.claude/

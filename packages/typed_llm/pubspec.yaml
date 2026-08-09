@@ -1,0 +1,27 @@
+name: typed_llm
+description: >-
+  Type-safe, validated, structured output from LLM providers (OpenAI, Gemini,
+  Claude, and OpenAI-compatible servers) via generated JSON Schemas. No
+  dart:mirrors, no runtime reflection, pure Dart.
+version: 0.1.0
+# TODO(you): fill these in once the GitHub repo exists, before first publish.
+# homepage: https://github.com/<org>/typed_llm
+# repository: https://github.com/<org>/typed_llm
+# issue_tracker: https://github.com/<org>/typed_llm/issues
+topics:
+  - llm
+  - json-schema
+  - structured-output
+  - openai
+  - gemini
+
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+
+dependencies:
+  http: ^1.2.0
+  meta: ^1.15.0
+
+dev_dependencies:
+  lints: ^5.0.0
+  test: ^1.25.0

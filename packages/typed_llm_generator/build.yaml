@@ -1,0 +1,8 @@
+builders:
+  llm_schema:
+    import: "package:typed_llm_generator/builder.dart"
+    builder_factories: ["llmSchemaBuilder"]
+    build_extensions: {".dart": [".llm_schema.g.part"]}
+    auto_apply: dependents
+    build_to: cache
+    applies_builders: ["source_gen:combining_builder"]

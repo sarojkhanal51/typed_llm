@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  analyze-and-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        package: [typed_llm, typed_llm_generator]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+      - name: Install dependencies
+        run: dart pub get
+        working-directory: packages/${{ matrix.package }}
+      - name: Verify formatting
+        run: dart format --output=none --set-exit-if-changed .
+        working-directory: packages/${{ matrix.package }}
+      - name: Analyze
+        run: dart analyze --fatal-infos
+        working-directory: packages/${{ matrix.package }}
+      - name: Run tests
+        run: dart test
+        working-directory: packages/${{ matrix.package }}
