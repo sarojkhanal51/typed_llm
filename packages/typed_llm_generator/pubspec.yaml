@@ -3,10 +3,9 @@ description: >-
   build_runner code generator that turns @LlmSchema-annotated classes into
   JSON Schemas and validated-JSON factories for the typed_llm package.
 version: 0.1.0
-# TODO(you): fill these in once the GitHub repo exists, before first publish.
-# homepage: https://github.com/<org>/typed_llm
-# repository: https://github.com/<org>/typed_llm
-# issue_tracker: https://github.com/<org>/typed_llm/issues
+homepage: https://github.com/sarojkhanal51/typed_llm
+repository: https://github.com/sarojkhanal51/typed_llm
+issue_tracker: https://github.com/sarojkhanal51/typed_llm/issues
 topics:
   - llm
   - json-schema

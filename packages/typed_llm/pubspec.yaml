@@ -4,10 +4,9 @@ description: >-
   Claude, and OpenAI-compatible servers) via generated JSON Schemas. No
   dart:mirrors, no runtime reflection, pure Dart.
 version: 0.1.0
-# TODO(you): fill these in once the GitHub repo exists, before first publish.
-# homepage: https://github.com/<org>/typed_llm
-# repository: https://github.com/<org>/typed_llm
-# issue_tracker: https://github.com/<org>/typed_llm/issues
+homepage: https://github.com/sarojkhanal51/typed_llm
+repository: https://github.com/sarojkhanal51/typed_llm
+issue_tracker: https://github.com/sarojkhanal51/typed_llm/issues
 topics:
   - llm
   - json-schema
