@@ -1,9 +1,8 @@
 name: typed_llm
 description: >-
   Type-safe, validated, structured output from LLM providers (OpenAI, Gemini,
-  Claude, and OpenAI-compatible servers) via generated JSON Schemas. No
-  dart:mirrors, no runtime reflection, pure Dart.
-version: 0.1.0
+  Claude) via generated JSON Schemas. No dart:mirrors, no runtime reflection.
+version: 0.1.1
 homepage: https://github.com/sarojkhanal51/typed_llm
 repository: https://github.com/sarojkhanal51/typed_llm
 issue_tracker: https://github.com/sarojkhanal51/typed_llm/issues

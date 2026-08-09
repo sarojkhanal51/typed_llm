@@ -1,3 +1,8 @@
+## 0.1.1
+
+- Shorten the package `description` to fit pub.dev's 60–180 character
+  scoring guideline (no functional changes).
+
 ## 0.1.0
 
 Initial release.
