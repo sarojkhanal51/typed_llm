@@ -45,6 +45,17 @@ validation errors fed back to the model, and hands you back a real,
 constructed `Invoice` — or a specific exception telling you exactly what went
 wrong.
 
+## How it works
+
+![Diagram of typed_llm's workflow: at build time, an @LlmSchema-annotated class is turned by typed_llm_generator into a JSON schema constant and a parser function; at runtime, extractor.extract sends a prompt and that schema to a provider, the raw response is checked by SchemaValidator, an invalid result loops back to the provider once with the errors appended to the prompt, and a valid result is parsed into the typed object.](https://raw.githubusercontent.com/sarojkhanal51/typed_llm/develop/packages/typed_llm/doc/workflow.svg)
+
+Two phases: **build time** (top) runs once via `build_runner` and turns an
+`@LlmSchema` class into a schema constant and a parser. **Runtime** (bottom)
+runs on every call — the provider's raw response is validated, an invalid
+result loops back once with the validation errors fed to the model, and a
+valid one becomes the typed object. If it's still invalid after the retry,
+you get a typed exception, never a silently-wrong object.
+
 ## Setup
 
 ```yaml

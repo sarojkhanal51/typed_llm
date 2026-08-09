@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 620" role="img" aria-label="Diagram of typed_llm's workflow: at build time, an @LlmSchema-annotated class is turned by typed_llm_generator into a JSON schema constant and a parser function; at runtime, extractor.extract sends a prompt and that schema to a provider, the raw response is checked by SchemaValidator, an invalid result loops back to the provider once with the errors appended to the prompt, and a valid result is parsed into the typed object.">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1b2333" />
+    </marker>
+    <marker id="arrow-warn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#b45309" />
+    </marker>
+    <marker id="arrow-ok" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1f9d63" />
+    </marker>
+  </defs>
+
+  <!-- self-contained light canvas so this reads the same on GitHub/pub.dev regardless of host theme -->
+  <rect x="0" y="0" width="1000" height="620" fill="#fbfbfd" />
+
+  <!-- band backgrounds -->
+  <rect x="20" y="26" width="960" height="140" rx="10" fill="#f1effe" />
+  <rect x="20" y="210" width="960" height="330" rx="10" fill="#f6f7f9" />
+
+  <text x="40" y="52" font-family="ui-monospace, SF Mono, Menlo, monospace" font-size="12" font-weight="600" letter-spacing="0.06em" fill="#5b4cf0">BUILD TIME &#183; once, via build_runner</text>
+  <text x="40" y="236" font-family="ui-monospace, SF Mono, Menlo, monospace" font-size="12" font-weight="600" letter-spacing="0.06em" fill="#5b6577">RUNTIME &#183; every extract&lt;T&gt;() call</text>
+
+  <!-- Row 1: build time -->
+  <g font-family="-apple-system, Segoe UI, ui-sans-serif, system-ui, sans-serif">
+    <rect x="40" y="66" width="220" height="80" rx="8" fill="#ffffff" stroke="#c9c2f9" stroke-width="1.5"/>
+    <text x="150" y="98" text-anchor="middle" font-size="13" font-weight="700" fill="#1b2333">Your class</text>
+    <text x="150" y="120" text-anchor="middle" font-family="ui-monospace, SF Mono, Menlo, monospace" font-size="12" fill="#5b6577">@LlmSchema()</text>
+    <text x="150" y="136" text-anchor="middle" font-family="ui-monospace, SF Mono, Menlo, monospace" font-size="12" fill="#5b6577">class Invoice { ... }</text>
+
+    <line x1="260" y1="106" x2="372" y2="106" stroke="#1b2333" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <text x="316" y="98" text-anchor="middle" font-size="11" fill="#5b6577">reads fields</text>
+
+    <rect x="380" y="66" width="220" height="80" rx="8" fill="#ffffff" stroke="#c9c2f9" stroke-width="1.5"/>
+    <text x="490" y="98" text-anchor="middle" font-size="13" font-weight="700" fill="#1b2333">typed_llm_generator</text>
+    <text x="490" y="120" text-anchor="middle" font-size="11.5" fill="#5b6577">source_gen builder,</text>
+    <text x="490" y="135" text-anchor="middle" font-size="11.5" fill="#5b6577">recursive over nested types</text>
+
+    <line x1="600" y1="106" x2="712" y2="106" stroke="#1b2333" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <text x="656" y="98" text-anchor="middle" font-size="11" fill="#5b6577">emits</text>
+
+    <rect x="720" y="66" width="240" height="80" rx="8" fill="#ffffff" stroke="#c9c2f9" stroke-width="1.5"/>
+    <text x="840" y="94" text-anchor="middle" font-family="ui-monospace, SF Mono, Menlo, monospace" font-size="12" font-weight="700" fill="#1b2333">InvoiceSchema</text>
+    <text x="840" y="112" text-anchor="middle" font-size="11" fill="#5b6577">JSON Schema const map</text>
+    <text x="840" y="130" text-anchor="middle" font-family="ui-monospace, SF Mono, Menlo, monospace" font-size="11.5" fill="#5b6577">_$InvoiceFromValidatedJson()</text>
+  </g>
+
+  <!-- connector build -> runtime -->
+  <path d="M 840 146 L 840 176 L 150 176 L 150 214" fill="none" stroke="#8b7dff" stroke-width="1.5" stroke-dasharray="4 4" marker-end="url(#arrow)"/>
+  <text x="495" y="192" text-anchor="middle" font-size="11" fill="#5b4cf0">passed in as schema: / fromJson:</text>
+
+  <!-- Row 2: runtime -->
+  <g font-family="-apple-system, Segoe UI, ui-sans-serif, system-ui, sans-serif">
+    <rect x="40" y="256" width="220" height="80" rx="8" fill="#ffffff" stroke="#d4d7de" stroke-width="1.5"/>
+    <text x="150" y="288" text-anchor="middle" font-family="ui-monospace, SF Mono, Menlo, monospace" font-size="12" font-weight="700" fill="#1b2333">extractor</text>
+    <text x="150" y="304" text-anchor="middle" font-family="ui-monospace, SF Mono, Menlo, monospace" font-size="11.5" fill="#1b2333">.extract&lt;Invoice&gt;()</text>
+    <text x="150" y="322" text-anchor="middle" font-size="11" fill="#5b6577">your call site</text>
+
+    <line x1="260" y1="296" x2="372" y2="296" stroke="#1b2333" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <text x="316" y="288" text-anchor="middle" font-size="11" fill="#5b6577">prompt + schema</text>
+
+    <rect x="380" y="256" width="220" height="80" rx="8" fill="#ffffff" stroke="#d4d7de" stroke-width="1.5"/>
+    <text x="490" y="288" text-anchor="middle" font-size="13" font-weight="700" fill="#1b2333">LlmProvider</text>
+    <text x="490" y="306" text-anchor="middle" font-size="11" fill="#5b6577">OpenAI &#183; Gemini &#183; Claude</text>
+    <text x="490" y="321" text-anchor="middle" font-size="11" fill="#5b6577">OpenAI-compatible</text>
+
+    <line x1="600" y1="296" x2="712" y2="296" stroke="#1b2333" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <text x="656" y="288" text-anchor="middle" font-size="11" fill="#5b6577">raw response text</text>
+
+    <rect x="720" y="256" width="240" height="80" rx="8" fill="#ffffff" stroke="#d4d7de" stroke-width="1.5"/>
+    <text x="840" y="288" text-anchor="middle" font-size="13" font-weight="700" fill="#1b2333">SchemaValidator</text>
+    <text x="840" y="306" text-anchor="middle" font-size="11" fill="#5b6577">decode + validate</text>
+    <text x="840" y="321" text-anchor="middle" font-size="11" fill="#5b6577">against InvoiceSchema</text>
+  </g>
+
+  <!-- retry loop: validator -> back to provider -->
+  <path d="M 840 336 L 840 420 Q 840 440 820 440 L 520 440 Q 500 440 500 420 L 500 336"
+        fill="none" stroke="#b45309" stroke-width="1.5" marker-end="url(#arrow-warn)"/>
+  <text x="670" y="460" text-anchor="middle" font-size="11.5" fill="#b45309">invalid &#8594; retry once, errors appended to prompt</text>
+
+  <!-- success path: validator -> typed result -->
+  <line x1="840" y1="336" x2="840" y2="486" stroke="#1f9d63" stroke-width="1.5" marker-end="url(#arrow-ok)"/>
+  <text x="900" y="416" text-anchor="middle" font-size="11.5" fill="#1f9d63">valid</text>
+
+  <rect x="720" y="494" width="240" height="70" rx="8" fill="#eafbf2" stroke="#1f9d63" stroke-width="1.5"/>
+  <text x="840" y="524" text-anchor="middle" font-family="ui-monospace, SF Mono, Menlo, monospace" font-size="13" font-weight="700" fill="#0f6b40">Invoice</text>
+  <text x="840" y="542" text-anchor="middle" font-size="11" fill="#1f9d63">typed, validated, returned</text>
+
+  <!-- exhausted retries -> exception, small side note -->
+  <text x="490" y="596" text-anchor="middle" font-size="11" fill="#8a8f9c">Still invalid after the retry &#8594; throws SchemaValidationException / MalformedJsonException / ProviderException, never a silent wrong object.</text>
+</svg>

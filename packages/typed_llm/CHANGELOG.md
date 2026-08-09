@@ -1,3 +1,8 @@
+## 0.1.2
+
+- Add a "How it works" workflow diagram to the README (build-time codegen
+  vs. runtime extraction, including the validation-retry loop).
+
 ## 0.1.1
 
 - Shorten the package `description` to fit pub.dev's 60–180 character
