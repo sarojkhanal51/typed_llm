@@ -26,3 +26,6 @@ pubspec.lock
 
 # Local tooling state, not part of the package
 .claude/
+
+# Monorepo path overrides: local dev only, never published or shared.
+pubspec_overrides.yaml

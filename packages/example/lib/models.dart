@@ -58,7 +58,7 @@ enum InvoiceStatus { open, paid, overdue }
 /// just plain generative constructors.
 @freezed
 @LlmSchema()
-class ShippingAddress with _$ShippingAddress {
+abstract class ShippingAddress with _$ShippingAddress {
   /// Reads the schema and factory `typed_llm_generator` emitted for
   /// [ShippingAddress] into `models.g.dart`.
   factory ShippingAddress.fromValidatedJson(Map<String, dynamic> json) =>

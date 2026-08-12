@@ -13,22 +13,19 @@ topics:
   - code-generation
 
 environment:
-  sdk: '>=3.4.0 <4.0.0'
+  sdk: '>=3.9.0 <4.0.0'
 
 dependencies:
-  typed_llm: ^0.1.0
-  build: ^2.4.0
-  source_gen: ^1.5.0
-  analyzer: '>=6.4.0 <7.0.0'
+  typed_llm: ^0.1.2
+  build: '>=4.0.0 <5.0.0'
+  source_gen: '>=4.0.0 <5.0.0'
+  # Deliberately wide: a generator must co-resolve with whatever other
+  # codegen packages (freezed, json_serializable) pin in the same app.
+  analyzer: '>=9.0.0 <15.0.0'
 
 dev_dependencies:
   lints: ^5.0.0
+  logging: ^1.2.0
   test: ^1.25.0
-  build_test: ^2.2.0
+  build_test: ^3.0.0
   build_runner: ^2.4.0
-
-# Resolved from the sibling package on disk during monorepo development.
-# Remove once typed_llm 0.1.0 is published and this override is no longer needed.
-dependency_overrides:
-  typed_llm:
-    path: ../typed_llm

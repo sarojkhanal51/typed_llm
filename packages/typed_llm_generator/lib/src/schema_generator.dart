@@ -5,8 +5,14 @@ import 'package:build/build.dart';
 import 'package:source_gen/source_gen.dart';
 import 'package:typed_llm/typed_llm.dart';
 
-final TypeChecker _llmSchemaChecker = TypeChecker.fromRuntime(LlmSchema);
-final TypeChecker _llmFieldChecker = TypeChecker.fromRuntime(LlmField);
+const TypeChecker _llmSchemaChecker = TypeChecker.typeNamed(
+  LlmSchema,
+  inPackage: 'typed_llm',
+);
+const TypeChecker _llmFieldChecker = TypeChecker.typeNamed(
+  LlmField,
+  inPackage: 'typed_llm',
+);
 
 /// Turns an `@LlmSchema()`-annotated class into a top-level
 /// `<Class>Schema` JSON Schema constant and a `_$<Class>FromValidatedJson`
@@ -54,10 +60,14 @@ typedef _FieldPlan = ({JsonSchema schema, String Function(String) extract});
 typedef _ClassPlan = ({JsonSchema schema, String Function(String) build});
 
 _ClassPlan _planForClass(
-    ClassElement classElement, Set<ClassElement> visiting) {
+  ClassElement classElement,
+  Set<ClassElement> visiting,
+) {
   if (!visiting.add(classElement)) {
-    final cycle =
-        [...visiting.map((e) => e.name), classElement.name].join(' -> ');
+    final cycle = [
+      ...visiting.map((e) => e.name),
+      classElement.name,
+    ].join(' -> ');
     throw InvalidGenerationSourceError(
       'Cyclic @LlmSchema reference detected: $cycle. typed_llm does not '
       'support recursive/cyclic @LlmSchema class graphs.',
@@ -76,17 +86,24 @@ _ClassPlan _planForClass(
   }
 
   final fieldPlans = <String, _FieldPlan>{};
-  for (final parameter in constructor.parameters) {
-    if (!parameter.isNamed) {
+  for (final parameter in constructor.formalParameters) {
+    // A named parameter always has a name; `name` is only null for a
+    // positional wildcard (`_`), which the same check rejects.
+    final parameterName = parameter.name;
+    if (!parameter.isNamed || parameterName == null) {
       throw InvalidGenerationSourceError(
-        "Parameter '${parameter.name}' on ${classElement.name}'s constructor "
-        'is positional. @LlmSchema requires every constructor parameter to '
-        'be named.',
+        "Parameter '${parameter.displayName}' on ${classElement.name}'s "
+        'constructor is positional. @LlmSchema requires every constructor '
+        'parameter to be named.',
         element: parameter,
       );
     }
-    fieldPlans[parameter.name] =
-        _planForField(parameter, classElement, visiting);
+    fieldPlans[parameterName] = _planForField(
+      parameter,
+      parameterName,
+      classElement,
+      visiting,
+    );
   }
 
   visiting.remove(classElement);
@@ -101,8 +118,10 @@ _ClassPlan _planForClass(
 
   String build(String mapExpr) {
     final args = fieldPlans.entries
-        .map((entry) =>
-            "${entry.key}: ${entry.value.extract("$mapExpr['${entry.key}']")}")
+        .map(
+          (entry) =>
+              "${entry.key}: ${entry.value.extract("$mapExpr['${entry.key}']")}",
+        )
         .join(', ');
     return '${classElement.name}($args)';
   }
@@ -111,13 +130,15 @@ _ClassPlan _planForClass(
 }
 
 _FieldPlan _planForField(
-  ParameterElement parameter,
+  FormalParameterElement parameter,
+  String fieldName,
   ClassElement owner,
   Set<ClassElement> visiting,
 ) {
   final fieldAnnotation = _llmFieldChecker.firstAnnotationOf(parameter);
-  final reader =
-      fieldAnnotation == null ? null : ConstantReader(fieldAnnotation);
+  final reader = fieldAnnotation == null
+      ? null
+      : ConstantReader(fieldAnnotation);
   final description = reader == null || reader.read('description').isNull
       ? null
       : reader.read('description').stringValue;
@@ -128,7 +149,7 @@ _FieldPlan _planForField(
   final nullable = type.nullabilitySuffix == NullabilitySuffix.question;
   if (explicitlyOptional && !nullable) {
     throw InvalidGenerationSourceError(
-      "Field '${parameter.name}' on ${owner.name} is marked "
+      "Field '$fieldName' on ${owner.name} is marked "
       '@LlmField(optional: true) but its Dart type is non-nullable. Make '
       'the field nullable (add ?) or remove optional: true.',
       element: parameter,
@@ -139,7 +160,7 @@ _FieldPlan _planForField(
     type,
     description: description,
     owner: owner,
-    fieldName: parameter.name,
+    fieldName: fieldName,
     visiting: visiting,
   );
 }
@@ -189,7 +210,10 @@ _FieldPlan _planForType(
   if (_isDateTime(type)) {
     return (
       schema: JsonSchema.string(
-          description: description, nullable: nullable, format: 'date-time'),
+        description: description,
+        nullable: nullable,
+        format: 'date-time',
+      ),
       extract: (expr) => nullable
           ? '$expr == null ? null : DateTime.parse($expr as String)'
           : 'DateTime.parse($expr as String)',
@@ -204,9 +228,10 @@ _FieldPlan _planForType(
         description: description,
         nullable: nullable,
         enumValues: [
-          for (final constant
-              in element.fields.where((field) => field.isEnumConstant))
-            constant.name,
+          for (final constant in element.fields.where(
+            (field) => field.isEnumConstant,
+          ))
+            if (constant.name case final name?) name,
         ],
       ),
       extract: (expr) => nullable
@@ -227,7 +252,10 @@ _FieldPlan _planForType(
     final itemExpr = itemPlan.extract('e');
     return (
       schema: JsonSchema.array(
-          description: description, nullable: nullable, items: itemPlan.schema),
+        description: description,
+        nullable: nullable,
+        items: itemPlan.schema,
+      ),
       extract: (expr) => nullable
           ? '($expr as List<dynamic>?)?.map((e) => $itemExpr).toList()'
           : '($expr as List<dynamic>).map((e) => $itemExpr).toList()',
@@ -277,7 +305,8 @@ String _emitDartLiteral(Object? value) {
     final Map<String, dynamic> value =>
       '{${value.entries.map((entry) => "'${_escapeDartString(entry.key)}': ${_emitDartLiteral(entry.value)}").join(', ')}}',
     _ => throw ArgumentError(
-        'Cannot emit a Dart literal for $value (${value.runtimeType}).'),
+      'Cannot emit a Dart literal for $value (${value.runtimeType}).',
+    ),
   };
 }
 

@@ -2,6 +2,13 @@
 
 Initial release.
 
+- Requires Dart 3.9 or newer, and builds on the analyzer 2.0 element model
+  (`analyzer >=9.0.0 <15.0.0`, `source_gen ^4`, `build ^4`). The analyzer
+  range is deliberately wide so this generator co-resolves with whatever
+  other codegen packages — `freezed`, `json_serializable` — pin in the same
+  app. Verified against analyzer 10.2.0 and 12.1.0, including a resolve
+  alongside `freezed` 3.x.
+
 - `LlmSchemaGenerator` (`build.yaml` key `llm_schema`): turns an
   `@LlmSchema()`-annotated class into a `<Class>Schema` JSON Schema constant
   and a `_$<Class>FromValidatedJson` factory function.

@@ -2,7 +2,7 @@
 
 [![pub package](https://img.shields.io/pub/v/typed_llm.svg)](https://pub.dev/packages/typed_llm)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![CI](https://github.com/REPLACE_WITH_ORG/typed_llm/actions/workflows/ci.yaml/badge.svg)](https://github.com/REPLACE_WITH_ORG/typed_llm/actions/workflows/ci.yaml)
+[![CI](https://github.com/sarojkhanal51/typed_llm/actions/workflows/ci.yaml/badge.svg)](https://github.com/sarojkhanal51/typed_llm/actions/workflows/ci.yaml)
 
 Type-safe, validated, structured output from LLM providers — no `dart:mirrors`,
 no runtime reflection, pure Dart.
@@ -60,12 +60,15 @@ you get a typed exception, never a silently-wrong object.
 
 ```yaml
 dependencies:
-  typed_llm: ^0.1.0
+  typed_llm: ^0.1.3
 
 dev_dependencies:
   build_runner: ^2.4.0
   typed_llm_generator: ^0.1.0
 ```
+
+`typed_llm` itself runs on Dart 3.4+; `typed_llm_generator` needs Dart 3.9+,
+since it is a dev-time dependency built on the current analyzer.
 
 Annotate your class, add the `part` directive and a `fromValidatedJson`
 wrapper (the wrapper is one line you write — the generator can't add a public
@@ -97,7 +100,7 @@ class Invoice {
 Then generate:
 
 ```sh
-dart run build_runner build --delete-conflicting-outputs
+dart run build_runner build
 ```
 
 `@LlmField(description:)` descriptions are optional but materially improve

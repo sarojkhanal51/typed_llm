@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:build/build.dart';
 import 'package:build_test/build_test.dart';
-import 'package:source_gen/source_gen.dart';
+import 'package:logging/logging.dart';
 import 'package:test/test.dart';
 import 'package:typed_llm_generator/builder.dart';
 
@@ -24,15 +24,20 @@ class LlmField {
 };
 
 /// `dart_style` reformats generated output, so exact-whitespace matching is
-/// brittle. This collapses all whitespace runs to a single space before
-/// checking containment, so assertions only care about token content/order.
+/// brittle. This strips all whitespace, and any trailing comma before a
+/// closing delimiter, before checking containment — so assertions only care
+/// about token content/order and survive a formatter upgrade changing its
+/// line-splitting or trailing-comma style.
 Matcher _generatedContains(List<String> expectedSnippets) {
-  String normalize(String value) => value.replaceAll(RegExp(r'\s+'), '');
+  String normalize(String value) => value
+      .replaceAll(RegExp(r'\s+'), '')
+      .replaceAll(RegExp(r',(?=[}\])])'), '');
 
   return predicate<List<int>>((bytes) {
     final actual = normalize(utf8.decode(bytes));
-    return expectedSnippets
-        .every((snippet) => actual.contains(normalize(snippet)));
+    return expectedSnippets.every(
+      (snippet) => actual.contains(normalize(snippet)),
+    );
   }, 'contains (whitespace-stripped) every expected snippet');
 }
 
@@ -44,27 +49,38 @@ Future<void> _expectGenerated(
 ) async {
   await testBuilder(
     llmSchemaBuilder(BuilderOptions.empty),
-    {
-      ..._typedLlmAssets,
-      'a|$sourceDartFile': sourceContent,
-    },
+    {..._typedLlmAssets, 'a|$sourceDartFile': sourceContent},
     outputs: {'a|$outputPartFile': _generatedContains(expectedSnippets)},
   );
 }
 
+/// Asserts that building [sourceContent] fails with a message matching
+/// [messageMatcher], and emits nothing.
+///
+/// `testBuilder` does not rethrow a generator's
+/// [InvalidGenerationSourceError]; it reports it as a `SEVERE` log record and
+/// completes normally, having written no outputs. So the assertion is on the
+/// logs, with `outputs: {}` pinning down that generation really was abandoned
+/// rather than merely warned about.
 Future<void> _expectBuildError(
-    String sourceDartFile, String sourceContent, Matcher messageMatcher) async {
-  await expectLater(
-    testBuilder(
-      llmSchemaBuilder(BuilderOptions.empty),
-      {
-        ..._typedLlmAssets,
-        'a|$sourceDartFile': sourceContent,
-      },
-    ),
-    throwsA(isA<InvalidGenerationSourceError>()
-        .having((e) => e.message, 'message', messageMatcher)),
+  String sourceDartFile,
+  String sourceContent,
+  Matcher messageMatcher,
+) async {
+  final logs = <LogRecord>[];
+  await testBuilder(
+    llmSchemaBuilder(BuilderOptions.empty),
+    {..._typedLlmAssets, 'a|$sourceDartFile': sourceContent},
+    outputs: {},
+    onLog: logs.add,
   );
+
+  final severe = logs
+      .where((record) => record.level >= Level.SEVERE)
+      .map((record) => record.message)
+      .toList();
+  expect(severe, hasLength(1), reason: 'expected exactly one build failure');
+  expect(severe.single, messageMatcher);
 }
 
 void main() {
@@ -159,11 +175,12 @@ class Ticket {
   });
 
   group('nullable fields', () {
-    test('a nullable field is optional and its type is a nullable array',
-        () async {
-      await _expectGenerated(
-        'lib/note.dart',
-        '''
+    test(
+      'a nullable field is optional and its type is a nullable array',
+      () async {
+        await _expectGenerated(
+          'lib/note.dart',
+          '''
 import 'package:typed_llm/typed_llm.dart';
 
 @LlmSchema()
@@ -172,20 +189,22 @@ class Note {
   Note({this.body});
 }
 ''',
-        'lib/note.llm_schema.g.part',
-        [
-          "'body': {'type': ['string', 'null']}",
-          "'required': ['body']",
-          "body: json['body'] as String?",
-        ],
-      );
-    });
+          'lib/note.llm_schema.g.part',
+          [
+            "'body': {'type': ['string', 'null']}",
+            "'required': ['body']",
+            "body: json['body'] as String?",
+          ],
+        );
+      },
+    );
 
-    test('@LlmField(optional: true) on a non-nullable field is a build error',
-        () async {
-      await _expectBuildError(
-        'lib/bad_note.dart',
-        '''
+    test(
+      '@LlmField(optional: true) on a non-nullable field is a build error',
+      () async {
+        await _expectBuildError(
+          'lib/bad_note.dart',
+          '''
 import 'package:typed_llm/typed_llm.dart';
 
 @LlmSchema()
@@ -194,21 +213,23 @@ class BadNote {
   BadNote({@LlmField(optional: true) required this.body});
 }
 ''',
-        allOf([
-          contains('BadNote'),
-          contains('optional: true'),
-          contains('non-nullable')
-        ]),
-      );
-    });
+          allOf([
+            contains('BadNote'),
+            contains('optional: true'),
+            contains('non-nullable'),
+          ]),
+        );
+      },
+    );
   });
 
   group('List<T>', () {
-    test('a list of a supported primitive is emitted as an array schema',
-        () async {
-      await _expectGenerated(
-        'lib/tags.dart',
-        '''
+    test(
+      'a list of a supported primitive is emitted as an array schema',
+      () async {
+        await _expectGenerated(
+          'lib/tags.dart',
+          '''
 import 'package:typed_llm/typed_llm.dart';
 
 @LlmSchema()
@@ -217,21 +238,23 @@ class Tags {
   Tags({required this.values});
 }
 ''',
-        'lib/tags.llm_schema.g.part',
-        [
-          "'values': {'type': 'array', 'items': {'type': 'string'}}",
-          "values: (json['values'] as List<dynamic>).map((e) => e as String).toList()",
-        ],
-      );
-    });
+          'lib/tags.llm_schema.g.part',
+          [
+            "'values': {'type': 'array', 'items': {'type': 'string'}}",
+            "values: (json['values'] as List<dynamic>).map((e) => e as String).toList()",
+          ],
+        );
+      },
+    );
   });
 
   group('nested @LlmSchema classes', () {
-    test('a nested class is inlined into both the schema and the factory',
-        () async {
-      await _expectGenerated(
-        'lib/invoice.dart',
-        '''
+    test(
+      'a nested class is inlined into both the schema and the factory',
+      () async {
+        await _expectGenerated(
+          'lib/invoice.dart',
+          '''
 import 'package:typed_llm/typed_llm.dart';
 
 @LlmSchema()
@@ -248,20 +271,21 @@ class Invoice {
   Invoice({required this.vendorName, required this.items});
 }
 ''',
-        'lib/invoice.llm_schema.g.part',
-        [
-          "'items': {'type': 'array', 'items': "
-              "{'type': 'object', 'properties': {'sku': {'type': 'string'}, "
-              "'quantity': {'type': 'integer'}}, 'required': ['sku', 'quantity'], "
-              "'additionalProperties': false}}",
-          "items: (json['items'] as List<dynamic>).map((e) => "
-              "LineItem(sku: (e as Map<String, dynamic>)['sku'] as String, "
-              "quantity: ((e as Map<String, dynamic>)['quantity'] as num).toInt())).toList()",
-          'LineItem _\$LineItemFromValidatedJson(Map<String, dynamic> json)',
-          'Invoice _\$InvoiceFromValidatedJson(Map<String, dynamic> json)',
-        ],
-      );
-    });
+          'lib/invoice.llm_schema.g.part',
+          [
+            "'items': {'type': 'array', 'items': "
+                "{'type': 'object', 'properties': {'sku': {'type': 'string'}, "
+                "'quantity': {'type': 'integer'}}, 'required': ['sku', 'quantity'], "
+                "'additionalProperties': false}}",
+            "items: (json['items'] as List<dynamic>).map((e) => "
+                "LineItem(sku: (e as Map<String, dynamic>)['sku'] as String, "
+                "quantity: ((e as Map<String, dynamic>)['quantity'] as num).toInt())).toList()",
+            'LineItem _\$LineItemFromValidatedJson(Map<String, dynamic> json)',
+            'Invoice _\$InvoiceFromValidatedJson(Map<String, dynamic> json)',
+          ],
+        );
+      },
+    );
 
     test('three levels of nesting resolve correctly', () async {
       await _expectGenerated(
@@ -320,11 +344,12 @@ class Vendor {
   });
 
   group('freezed-shaped classes', () {
-    test('reads parameters from a redirecting const factory constructor',
-        () async {
-      await _expectGenerated(
-        'lib/money.dart',
-        '''
+    test(
+      'reads parameters from a redirecting const factory constructor',
+      () async {
+        await _expectGenerated(
+          'lib/money.dart',
+          '''
 import 'package:typed_llm/typed_llm.dart';
 
 @LlmSchema()
@@ -340,23 +365,25 @@ class _Money implements Money {
   final double amount;
 }
 ''',
-        'lib/money.llm_schema.g.part',
-        [
-          "'currency': {'type': 'string'}",
-          "'amount': {'type': 'number'}",
-          'Money _\$MoneyFromValidatedJson(Map<String, dynamic> json)',
-          "return Money(currency: json['currency'] as String, amount: (json['amount'] as num).toDouble());",
-        ],
-      );
-    });
+          'lib/money.llm_schema.g.part',
+          [
+            "'currency': {'type': 'string'}",
+            "'amount': {'type': 'number'}",
+            'Money _\$MoneyFromValidatedJson(Map<String, dynamic> json)',
+            "return Money(currency: json['currency'] as String, amount: (json['amount'] as num).toDouble());",
+          ],
+        );
+      },
+    );
   });
 
   group('unsupported types', () {
-    test('an unsupported field type produces an actionable build error',
-        () async {
-      await _expectBuildError(
-        'lib/bad_field.dart',
-        '''
+    test(
+      'an unsupported field type produces an actionable build error',
+      () async {
+        await _expectBuildError(
+          'lib/bad_field.dart',
+          '''
 import 'package:typed_llm/typed_llm.dart';
 
 @LlmSchema()
@@ -365,20 +392,19 @@ class BadField {
   BadField({required this.timeout});
 }
 ''',
-        allOf([
-          contains('timeout'),
-          contains('BadField'),
-          contains('unsupported type')
-        ]),
-      );
-    });
+          allOf([
+            contains('timeout'),
+            contains('BadField'),
+            contains('unsupported type'),
+          ]),
+        );
+      },
+    );
 
     test(
-        'a positional constructor parameter produces an actionable build error',
-        () async {
-      await _expectBuildError(
-        'lib/bad_ctor.dart',
-        '''
+      'a positional constructor parameter produces an actionable build error',
+      () async {
+        await _expectBuildError('lib/bad_ctor.dart', '''
 import 'package:typed_llm/typed_llm.dart';
 
 @LlmSchema()
@@ -386,9 +412,8 @@ class BadCtor {
   final String name;
   BadCtor(this.name);
 }
-''',
-        allOf([contains('positional'), contains('BadCtor')]),
-      );
-    });
+''', allOf([contains('positional'), contains('BadCtor')]));
+      },
+    );
   });
 }

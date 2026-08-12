@@ -14,7 +14,7 @@ A runnable example demonstrating the full `typed_llm` workflow:
 
 ```sh
 dart pub get
-dart run build_runner build --delete-conflicting-outputs
+dart run build_runner build
 OPENAI_API_KEY=sk-... dart run bin/main.dart
 ```
 
