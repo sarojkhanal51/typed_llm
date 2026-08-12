@@ -1,3 +1,33 @@
+## 0.2.2
+
+### Fixed
+
+- A `List<T>` of nested `@LlmSchema` classes generated a
+  `Map<String, dynamic>` cast inside *every* property access. Dart promotes
+  the `.map` parameter after the first cast, so each repeat was an
+  `unnecessary_cast` warning — appearing in the analyzer output of any
+  project that analyzes generated files, from code the user did not write.
+  The cast is now hoisted into a local:
+
+  ```dart
+  // before — one unnecessary_cast per property after the first
+  .map((e) => LineItem(
+        sku: (e as Map<String, dynamic>)['sku'] as String,
+        quantity: ((e as Map<String, dynamic>)['quantity'] as num).toInt(),
+      ))
+
+  // after
+  .map((e) {
+    final map = e as Map<String, dynamic>;
+    return LineItem(
+      sku: map['sku'] as String,
+      quantity: (map['quantity'] as num).toInt(),
+    );
+  })
+  ```
+
+  Only affects generated output; regenerate with `build_runner` to pick it up.
+
 ## 0.2.1
 
 No functional changes.

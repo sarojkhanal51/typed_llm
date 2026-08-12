@@ -65,7 +65,20 @@ $className _\$${className}FromValidatedJson(Map<String, dynamic> json) {
 
 /// The generated schema for one field, and the Dart expression (given a
 /// source expression for the raw JSON value) that extracts it.
-typedef _FieldPlan = ({JsonSchema schema, String Function(String) extract});
+///
+/// [buildFromMap] is non-null only for a nested `@LlmSchema` object, and
+/// builds the construction expression from an expression *already* typed as
+/// `Map<String, dynamic>`. It exists so a caller holding the value in a local
+/// — the `List<T>` branch, whose `.map` parameter is one — can cast once and
+/// reuse it, instead of re-casting inside every property access. Repeating
+/// the cast on a local is an `unnecessary_cast` warning after the first one
+/// promotes it, which would surface in the analyzer output of any project
+/// that lints generated files.
+typedef _FieldPlan = ({
+  JsonSchema schema,
+  String Function(String) extract,
+  String Function(String)? buildFromMap,
+});
 
 /// The generated schema for a whole `@LlmSchema` class, and a function that
 /// builds a `ClassName(field: ..., ...)` construction expression given a
@@ -191,12 +204,14 @@ _FieldPlan _planForType(
     return (
       schema: JsonSchema.string(description: description, nullable: nullable),
       extract: (expr) => nullable ? '$expr as String?' : '$expr as String',
+      buildFromMap: null,
     );
   }
   if (type.isDartCoreBool) {
     return (
       schema: JsonSchema.boolean(description: description, nullable: nullable),
       extract: (expr) => nullable ? '$expr as bool?' : '$expr as bool',
+      buildFromMap: null,
     );
   }
   if (type.isDartCoreInt) {
@@ -204,6 +219,7 @@ _FieldPlan _planForType(
       schema: JsonSchema.integer(description: description, nullable: nullable),
       extract: (expr) =>
           nullable ? '($expr as num?)?.toInt()' : '($expr as num).toInt()',
+      buildFromMap: null,
     );
   }
   if (type.isDartCoreDouble) {
@@ -212,12 +228,14 @@ _FieldPlan _planForType(
       extract: (expr) => nullable
           ? '($expr as num?)?.toDouble()'
           : '($expr as num).toDouble()',
+      buildFromMap: null,
     );
   }
   if (type.isDartCoreNum) {
     return (
       schema: JsonSchema.number(description: description, nullable: nullable),
       extract: (expr) => nullable ? '$expr as num?' : '$expr as num',
+      buildFromMap: null,
     );
   }
   if (_isDateTime(type)) {
@@ -230,6 +248,7 @@ _FieldPlan _planForType(
       extract: (expr) => nullable
           ? '$expr == null ? null : DateTime.parse($expr as String)'
           : 'DateTime.parse($expr as String)',
+      buildFromMap: null,
     );
   }
 
@@ -250,6 +269,7 @@ _FieldPlan _planForType(
       extract: (expr) => nullable
           ? '$expr == null ? null : $enumName.values.byName($expr as String)'
           : '$enumName.values.byName($expr as String)',
+      buildFromMap: null,
     );
   }
 
@@ -262,7 +282,25 @@ _FieldPlan _planForType(
       fieldName: fieldName,
       visiting: visiting,
     );
-    final itemExpr = itemPlan.extract('e');
+    // For a nested object, hoist the `Map<String, dynamic>` cast into a local
+    // instead of repeating it inside every property access. `e` is a local,
+    // so the first cast promotes it and each repeat would be flagged
+    // `unnecessary_cast` in projects that analyze generated files.
+    final itemBuild = itemPlan.buildFromMap;
+    final String mapper;
+    if (itemBuild == null) {
+      mapper = '(e) => ${itemPlan.extract('e')}';
+    } else {
+      final itemNullable =
+          itemType.nullabilitySuffix == NullabilitySuffix.question;
+      final body = [
+        if (itemNullable) 'if (e == null) return null;',
+        'final map = e as Map<String, dynamic>;',
+        'return ${itemBuild('map')};',
+      ].join('\n');
+      mapper = '(e) {\n$body\n}';
+    }
+
     return (
       schema: JsonSchema.array(
         description: description,
@@ -270,8 +308,9 @@ _FieldPlan _planForType(
         items: itemPlan.schema,
       ),
       extract: (expr) => nullable
-          ? '($expr as List<dynamic>?)?.map((e) => $itemExpr).toList()'
-          : '($expr as List<dynamic>).map((e) => $itemExpr).toList()',
+          ? '($expr as List<dynamic>?)?.map($mapper).toList()'
+          : '($expr as List<dynamic>).map($mapper).toList()',
+      buildFromMap: null,
     );
   }
 
@@ -288,6 +327,7 @@ _FieldPlan _planForType(
       extract: (expr) => nullable
           ? "$expr == null ? null : ${nestedPlan.build('($expr as Map<String, dynamic>)')}"
           : nestedPlan.build('($expr as Map<String, dynamic>)'),
+      buildFromMap: nestedPlan.build,
     );
   }
 

@@ -292,9 +292,14 @@ class Invoice {
                 "{'type': 'object', 'properties': {'sku': {'type': 'string'}, "
                 "'quantity': {'type': 'integer'}}, 'required': ['sku', 'quantity'], "
                 "'additionalProperties': false}}",
-            "items: (json['items'] as List<dynamic>).map((e) => "
-                "LineItem(sku: (e as Map<String, dynamic>)['sku'] as String, "
-                "quantity: ((e as Map<String, dynamic>)['quantity'] as num).toInt())).toList()",
+            // The Map cast is hoisted into a local rather than repeated per
+            // property, which would be an `unnecessary_cast` warning in any
+            // project that analyzes generated files.
+            "items: (json['items'] as List<dynamic>).map((e) {",
+            'final map = e as Map<String, dynamic>;',
+            "return LineItem(sku: map['sku'] as String, "
+                "quantity: (map['quantity'] as num).toInt());",
+            '}).toList()',
             'LineItem _\$LineItemFromValidatedJson(Map<String, dynamic> json)',
             'Invoice _\$InvoiceFromValidatedJson(Map<String, dynamic> json)',
           ],
@@ -390,6 +395,44 @@ class _Money implements Money {
         );
       },
     );
+  });
+
+  group('generated code cleanliness', () {
+    test('casts a list item to Map once, not once per property', () async {
+      await testBuilder(
+        llmSchemaBuilder(BuilderOptions.empty),
+        {
+          ..._typedLlmAssets,
+          'a|lib/order.dart': '''
+import 'package:typed_llm/typed_llm.dart';
+
+@LlmSchema()
+class Part {
+  final String sku;
+  final int quantity;
+  final double price;
+  Part({required this.sku, required this.quantity, required this.price});
+}
+
+@LlmSchema()
+class Order {
+  final List<Part> parts;
+  Order({required this.parts});
+}
+''',
+        },
+        outputs: {
+          'a|lib/order.llm_schema.g.part': predicate<List<int>>((bytes) {
+            final source = utf8.decode(bytes);
+            // Order's factory must cast the `.map` parameter exactly once.
+            // Repeating it per property promotes `e` and every repeat is then
+            // an `unnecessary_cast` warning in the consuming project.
+            final casts = 'e as Map<String, dynamic>'.allMatches(source).length;
+            return casts == 1;
+          }, 'casts the list item to Map<String, dynamic> exactly once'),
+        },
+      );
+    });
   });
 
   group('unsupported types', () {
