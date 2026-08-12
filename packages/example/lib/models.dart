@@ -18,11 +18,6 @@ class Invoice {
     required this.items,
   });
 
-  /// Reads the schema and factory `typed_llm_generator` emitted for
-  /// [Invoice] into `models.g.dart`.
-  factory Invoice.fromValidatedJson(Map<String, dynamic> json) =>
-      _$InvoiceFromValidatedJson(json);
-
   final String vendorName;
   final double totalAmount;
   final DateTime dueDate;
@@ -37,11 +32,6 @@ class Invoice {
 class LineItem {
   LineItem(
       {required this.sku, required this.quantity, required this.unitPrice});
-
-  /// Reads the schema and factory `typed_llm_generator` emitted for
-  /// [LineItem] into `models.g.dart`.
-  factory LineItem.fromValidatedJson(Map<String, dynamic> json) =>
-      _$LineItemFromValidatedJson(json);
 
   final String sku;
   final int quantity;
@@ -59,11 +49,6 @@ enum InvoiceStatus { open, paid, overdue }
 @freezed
 @LlmSchema()
 abstract class ShippingAddress with _$ShippingAddress {
-  /// Reads the schema and factory `typed_llm_generator` emitted for
-  /// [ShippingAddress] into `models.g.dart`.
-  factory ShippingAddress.fromValidatedJson(Map<String, dynamic> json) =>
-      _$ShippingAddressFromValidatedJson(json);
-
   const factory ShippingAddress(
       {required String street,
       required String city,

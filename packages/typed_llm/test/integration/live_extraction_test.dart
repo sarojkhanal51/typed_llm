@@ -24,15 +24,17 @@ final _capitalFactSchema = const JsonSchema.object(
   required: ['country', 'capital'],
 ).toMap();
 
+final _capitalFactType = LlmType<_CapitalFact>(
+  name: 'CapitalFact',
+  schema: _capitalFactSchema,
+  fromJson: _capitalFactFromJson,
+);
+
 const _prompt =
     'What is the capital of France? Respond with the country and its capital.';
 
 Future<void> _expectParisFact(Extractor extractor) async {
-  final fact = await extractor.extract<_CapitalFact>(
-    prompt: _prompt,
-    schema: _capitalFactSchema,
-    fromJson: _capitalFactFromJson,
-  );
+  final fact = await extractor.extract(_capitalFactType, prompt: _prompt);
 
   expect(fact.country.toLowerCase(), contains('france'));
   expect(fact.capital.toLowerCase(), contains('paris'));

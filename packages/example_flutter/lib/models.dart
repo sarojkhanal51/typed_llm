@@ -7,8 +7,6 @@ part 'models.g.dart';
 class Invoice {
   Invoice({required this.vendorName, required this.totalAmount, required this.dueDate});
 
-  factory Invoice.fromValidatedJson(Map<String, dynamic> json) => _$InvoiceFromValidatedJson(json);
-
   final String vendorName;
   final double totalAmount;
   final DateTime dueDate;

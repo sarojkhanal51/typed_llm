@@ -12,11 +12,11 @@ This is a dev dependency; you don't import it in application code:
 
 ```yaml
 dependencies:
-  typed_llm: ^0.1.3
+  typed_llm: ^0.2.0
 
 dev_dependencies:
   build_runner: ^2.4.0
-  typed_llm_generator: ^0.1.0
+  typed_llm_generator: ^0.2.0
 ```
 
 Code generation requires Dart 3.9 or newer. The `typed_llm` runtime package

@@ -24,10 +24,19 @@ final _pointSchema = const JsonSchema.object(
   required: ['x', 'y'],
 ).toMap();
 
+/// Stands in for the `\$Point` constant `typed_llm_generator` would emit.
+final _pointType = LlmType<_Point>(
+  name: 'Point',
+  schema: _pointSchema,
+  fromJson: _pointFromJson,
+);
+
 final class _ScriptedProvider implements LlmProvider {
   _ScriptedProvider(this._actions);
   final List<FutureOr<String> Function()> _actions;
   final List<String> prompts = [];
+  final List<String> schemaNames = [];
+  final List<Map<String, dynamic>> schemas = [];
   var _index = 0;
 
   @override
@@ -37,19 +46,44 @@ final class _ScriptedProvider implements LlmProvider {
     required String schemaName,
   }) async {
     prompts.add(prompt);
+    schemaNames.add(schemaName);
+    schemas.add(schema);
     final action = _actions[_index];
     _index++;
     return action();
   }
 }
 
-Future<_Point> _run(Extractor extractor) => extractor.extract<_Point>(
-      prompt: 'Extract the point.',
-      schema: _pointSchema,
-      fromJson: _pointFromJson,
-    );
+Future<_Point> _run(Extractor extractor) =>
+    extractor.extract(_pointType, prompt: 'Extract the point.');
 
 void main() {
+  group('LlmType', () {
+    test('carries the schema name through to the provider', () async {
+      final provider = _ScriptedProvider([() => '{"x": 1, "y": 2}']);
+      final extractor = Extractor(provider: provider);
+
+      await _run(extractor);
+
+      // The name comes from LlmType.name, not from `'$T'` — so it survives
+      // type arguments and stays stable regardless of how T is written at
+      // the call site.
+      expect(provider.schemaNames, ['Point']);
+    });
+
+    test('binds schema and factory so T is inferred from the LlmType',
+        () async {
+      final provider = _ScriptedProvider([() => '{"x": 7, "y": 8}']);
+      final extractor = Extractor(provider: provider);
+
+      // No explicit type argument: T comes from _pointType.
+      final result = await extractor.extract(_pointType, prompt: 'p');
+
+      expect(result, const _Point(7, 8));
+      expect(provider.schemas.single, _pointSchema);
+    });
+  });
+
   group('successful extraction', () {
     test('returns the parsed object on the first attempt', () async {
       final provider = _ScriptedProvider([() => '{"x": 1, "y": 2}']);

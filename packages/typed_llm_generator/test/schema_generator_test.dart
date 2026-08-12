@@ -20,6 +20,17 @@ class LlmField {
   final String? description;
   final bool optional;
 }
+
+class LlmType<T> {
+  const LlmType({
+    required this.name,
+    required this.schema,
+    required this.fromJson,
+  });
+  final String name;
+  final Map<String, dynamic> schema;
+  final T Function(Map<String, dynamic> json) fromJson;
+}
 ''',
 };
 
@@ -109,6 +120,10 @@ class Primitives {
 ''',
         'lib/primitives.llm_schema.g.part',
         [
+          "const LlmType<Primitives> \$Primitives = LlmType<Primitives>(",
+          "name: 'Primitives'",
+          'schema: PrimitivesSchema',
+          'fromJson: _\$PrimitivesFromValidatedJson',
           "const Map<String, dynamic> PrimitivesSchema = {'type': 'object', 'properties': {",
           "'name': {'type': 'string'}",
           "'count': {'type': 'integer'}",

@@ -22,6 +22,14 @@ final _pointSchema = const JsonSchema.object(
   required: ['x', 'y'],
 ).toMap();
 
+// The generator emits one of these as `$Point`; built by hand here, since
+// this example deliberately skips code generation.
+final _pointType = LlmType<Point>(
+  name: 'Point',
+  schema: _pointSchema,
+  fromJson: _pointFromJson,
+);
+
 Future<void> main() async {
   final apiKey = Platform.environment['OPENAI_API_KEY'];
   if (apiKey == null) {
@@ -32,10 +40,9 @@ Future<void> main() async {
   final extractor = Extractor(
       provider: OpenAiProvider(apiKey: apiKey, model: 'gpt-4o-2024-08-06'));
 
-  final point = await extractor.extract<Point>(
+  final point = await extractor.extract(
+    _pointType,
     prompt: 'Extract the point (3, 4) as JSON with integer fields x and y.',
-    schema: _pointSchema,
-    fromJson: _pointFromJson,
   );
 
   stdout.writeln('Point(${point.x}, ${point.y})');

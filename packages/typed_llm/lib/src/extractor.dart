@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:meta/meta.dart';
 
 import 'exceptions.dart';
+import 'llm_type.dart';
 import 'providers/provider.dart';
 import 'schema/validator.dart';
 
@@ -37,10 +38,9 @@ final class ExtractorConfig {
 ///
 /// ```dart
 /// final extractor = Extractor(provider: OpenAiProvider(apiKey: apiKey));
-/// final invoice = await extractor.extract<Invoice>(
+/// final invoice = await extractor.extract(
+///   $Invoice,
 ///   prompt: 'Extract the invoice from this text: ...',
-///   schema: InvoiceSchema,
-///   fromJson: Invoice.fromValidatedJson,
 /// );
 /// ```
 ///
@@ -63,18 +63,22 @@ final class Extractor {
   final SchemaValidator _validator;
   final ExtractorConfig _config;
 
-  /// Extracts a `T` matching [schema] from [prompt], using [fromJson] to
-  /// build `T` from the validated JSON object.
+  /// Extracts a [T] from [prompt], as described by [type].
   ///
-  /// [fromJson] is typically a class's generated-and-wrapped constructor,
-  /// e.g. `Invoice.fromValidatedJson`, which itself calls
-  /// `_$InvoiceFromValidatedJson`.
-  Future<T> extract<T>({
+  /// [type] is the `$<Class>` constant `typed_llm_generator` emits for an
+  /// `@LlmSchema()` class — it carries both the schema sent to the model and
+  /// the factory that rebuilds `T` from the validated response, so `T` is
+  /// inferred and the two cannot be mismatched:
+  ///
+  /// ```dart
+  /// final invoice = await extractor.extract($Invoice, prompt: '...');
+  /// ```
+  Future<T> extract<T>(
+    LlmType<T> type, {
     required String prompt,
-    required Map<String, dynamic> schema,
-    required T Function(Map<String, dynamic> json) fromJson,
   }) async {
-    final schemaName = '$T';
+    final schema = type.schema;
+    final schemaName = type.name;
     var currentPrompt = prompt;
 
     for (var attempt = 0;; attempt++) {
@@ -82,7 +86,7 @@ final class Extractor {
           await _generateWithHttpRetry(currentPrompt, schema, schemaName);
       final outcome = _decodeAndValidate(raw, schema, _validator);
       if (outcome.data != null) {
-        return fromJson(outcome.data!);
+        return type.fromJson(outcome.data!);
       }
       final failure = outcome.failure!;
       if (attempt >= _config.maxValidationRetries) {

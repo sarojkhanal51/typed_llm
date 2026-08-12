@@ -1,3 +1,66 @@
+## 0.2.0
+
+**Breaking:** `Extractor.extract` now takes a single generated `LlmType<T>`
+instead of separate `schema:` and `fromJson:` arguments.
+
+### Why
+
+The old signature let the schema and the factory disagree. Nothing tied
+`schema:`, `fromJson:`, and `T` together, so this compiled and validated
+cleanly, then failed at construction with a raw `TypeError` — not the
+`TypedLlmException` this package promises:
+
+```dart
+await extractor.extract<Invoice>(
+  prompt: '...',
+  schema: ReceiptSchema,                  // wrong schema
+  fromJson: Invoice.fromValidatedJson,
+);
+```
+
+Binding both into one `LlmType<T>` makes that unrepresentable, and lets `T`
+be inferred rather than written out.
+
+### Migrating
+
+The generator now emits `$<Class>` for every `@LlmSchema()` class:
+
+```dart
+// before
+final invoice = await extractor.extract<Invoice>(
+  prompt: '...',
+  schema: InvoiceSchema,
+  fromJson: Invoice.fromValidatedJson,
+);
+
+// after
+final invoice = await extractor.extract($Invoice, prompt: '...');
+```
+
+The hand-written `fromValidatedJson` wrapper is no longer needed — `$Invoice`
+references the generated factory directly. Delete it; keeping it is harmless.
+Requires `typed_llm_generator` 0.2.0, and a `build_runner` re-run.
+
+### Added
+
+- `LlmType<T>` — binds a JSON Schema to the factory that rebuilds `T`, plus
+  the schema `name` sent to providers that need one. The generator emits a
+  `const` instance per annotated class; construct one by hand for
+  hand-written schemas (see `example/main.dart`).
+
+### Changed
+
+- The provider-facing schema name now comes from `LlmType.name` (the Dart
+  class's name, captured at build time) rather than from `'$T'` at runtime.
+- `InvoiceSchema` is still generated, unchanged, for callers that want the
+  raw JSON Schema map.
+
+### Fixed
+
+- The library-level dartdoc described the package as "Phase 4" and referred
+  to work "landing in the final phase" — internal development language that
+  was published to pub.dev.
+
 ## 0.1.3
 
 Documentation only — no functional or API changes.

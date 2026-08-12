@@ -66,10 +66,9 @@ class _HomePageState extends State<_HomePage> {
 
     final extractor = Extractor(provider: _buildProvider(_apiKeyController.text.trim()));
     try {
-      final invoice = await extractor.extract<Invoice>(
+      final invoice = await extractor.extract(
+        $Invoice,
         prompt: 'Extract the invoice from this text:\n\n${_textController.text}',
-        schema: InvoiceSchema,
-        fromJson: Invoice.fromValidatedJson,
       );
       setState(() {
         _resultText = 'Vendor: ${invoice.vendorName}\nTotal: ${invoice.totalAmount}\nDue: ${invoice.dueDate}';

@@ -35,10 +35,9 @@ Future<void> main() async {
       provider: OpenAiProvider(apiKey: apiKey, model: 'gpt-4o-2024-08-06'));
 
   try {
-    final invoice = await extractor.extract<Invoice>(
+    final invoice = await extractor.extract(
+      $Invoice,
       prompt: 'Extract the invoice from this text:\n\n$_sampleInvoiceText',
-      schema: InvoiceSchema,
-      fromJson: Invoice.fromValidatedJson,
     );
     stdout.writeln('Vendor: ${invoice.vendorName}');
     stdout.writeln('Total: ${invoice.totalAmount} (${invoice.status.name})');
@@ -47,11 +46,10 @@ Future<void> main() async {
       stdout.writeln('  ${item.sku} x${item.quantity} @ ${item.unitPrice}');
     }
 
-    final address = await extractor.extract<ShippingAddress>(
+    final address = await extractor.extract(
+      $ShippingAddress,
       prompt:
           'Extract the shipping address from this text:\n\n$_sampleInvoiceText',
-      schema: ShippingAddressSchema,
-      fromJson: ShippingAddress.fromValidatedJson,
     );
     stdout.writeln(
         'Ship to: ${address.street}, ${address.city} ${address.postalCode}');

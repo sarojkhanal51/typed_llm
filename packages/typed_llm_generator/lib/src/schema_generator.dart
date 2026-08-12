@@ -14,9 +14,14 @@ const TypeChecker _llmFieldChecker = TypeChecker.typeNamed(
   inPackage: 'typed_llm',
 );
 
-/// Turns an `@LlmSchema()`-annotated class into a top-level
-/// `<Class>Schema` JSON Schema constant and a `_$<Class>FromValidatedJson`
-/// factory function, emitted into that class's `.g.dart` part file.
+/// Turns an `@LlmSchema()`-annotated class into three top-level members in
+/// that class's `.g.dart` part file:
+///
+/// - `$<Class>` — an `LlmType<Class>` binding the schema to the factory.
+///   This is what you pass to `Extractor.extract`.
+/// - `<Class>Schema` — the raw JSON Schema map, for callers that want to
+///   send or inspect the schema themselves.
+/// - `_$<Class>FromValidatedJson` — the factory `$<Class>` points at.
 ///
 /// Nested `@LlmSchema` classes and `List<T>` of a supported type are
 /// resolved recursively and inlined into both the schema and the factory —
@@ -41,6 +46,14 @@ class LlmSchemaGenerator extends GeneratorForAnnotation<LlmSchema> {
     final className = element.name;
 
     return '''
+/// The [LlmType] for [$className] — pass this to `Extractor.extract`.
+const LlmType<$className> \$$className = LlmType<$className>(
+  name: '$className',
+  schema: ${className}Schema,
+  fromJson: _\$${className}FromValidatedJson,
+);
+
+/// The raw JSON Schema describing [$className].
 const Map<String, dynamic> ${className}Schema = $schemaLiteral;
 
 $className _\$${className}FromValidatedJson(Map<String, dynamic> json) {

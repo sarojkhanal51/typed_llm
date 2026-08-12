@@ -1,3 +1,25 @@
+## 0.2.0
+
+Requires `typed_llm` ^0.2.0.
+
+### Added
+
+- Every `@LlmSchema()` class now also generates `$<Class>`, a
+  `const LlmType<Class>` binding `<Class>Schema` to
+  `_$<Class>FromValidatedJson`. This is what you pass to
+  `Extractor.extract`, and it is what makes the call type-safe — see
+  `typed_llm`'s 0.2.0 changelog for the mismatch it rules out.
+
+### Changed
+
+- `<Class>Schema` and the generated members now carry dartdoc, so they no
+  longer trip `public_member_api_docs` in projects that lint generated code.
+
+Existing output is otherwise unchanged: `<Class>Schema` and
+`_$<Class>FromValidatedJson` keep their names and shapes, so a
+`fromValidatedJson` wrapper you already wrote still compiles. It is now
+redundant, though — `$<Class>` points at the factory directly.
+
 ## 0.1.0
 
 Initial release.
