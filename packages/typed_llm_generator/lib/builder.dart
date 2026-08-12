@@ -1,3 +1,10 @@
+/// The `build_runner` entry point for `typed_llm_generator`.
+///
+/// `build.yaml` points at this library's [llmSchemaBuilder] factory under the
+/// `llm_schema` builder key; you do not import this library from application
+/// code.
+library;
+
 import 'package:build/build.dart';
 import 'package:source_gen/source_gen.dart';
 

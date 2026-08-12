@@ -1,3 +1,13 @@
+## 0.2.1
+
+No functional changes.
+
+- Add an `example/` walking through the generator's input and its generated
+  output. pub.dev scored this package 150/160 without one — "Package has an
+  example" was the only deduction; every other section was already full
+  marks.
+- Add a library-level dartdoc to `builder.dart`.
+
 ## 0.2.0
 
 Requires `typed_llm` ^0.2.0.
