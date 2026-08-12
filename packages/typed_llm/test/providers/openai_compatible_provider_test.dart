@@ -156,4 +156,13 @@ void main() {
       );
     });
   });
+
+  test('constructs with a real http client when none is injected', () {
+    // The httpClient parameter is a test seam; omitting it must still yield a
+    // usable provider. No request is made here, so no network is touched.
+    expect(
+        OpenAiCompatibleProvider(
+            baseUrl: 'http://localhost:11434/v1', model: 'llama3.1'),
+        isA<LlmProvider>());
+  });
 }

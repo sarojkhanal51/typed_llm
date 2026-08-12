@@ -84,6 +84,41 @@ void main() {
     });
   });
 
+  group('non-object JSON', () {
+    test('a top-level array is reported as MalformedJsonException', () async {
+      // Models routinely wrap a single object in an array. That is valid JSON
+      // but not an object, so it must fail as malformed rather than reaching
+      // the parser and throwing a raw cast error.
+      final provider = _ScriptedProvider([
+        () => '[{"x": 1, "y": 2}]',
+        () => '[{"x": 1, "y": 2}]',
+      ]);
+      final extractor = Extractor(provider: provider);
+
+      await expectLater(
+        _run(extractor),
+        throwsA(
+          isA<MalformedJsonException>().having(
+            (e) => e.message,
+            'message',
+            allOf(contains('expected a JSON object'), contains('List')),
+          ),
+        ),
+      );
+    });
+
+    test('the retry prompt explains that an object was expected', () async {
+      final provider = _ScriptedProvider([
+        () => '"just a string"',
+        () => '{"x": 3, "y": 4}',
+      ]);
+      final extractor = Extractor(provider: provider);
+
+      expect(await _run(extractor), const _Point(3, 4));
+      expect(provider.prompts.last, contains('expected a JSON object'));
+    });
+  });
+
   group('successful extraction', () {
     test('returns the parsed object on the first attempt', () async {
       final provider = _ScriptedProvider([() => '{"x": 1, "y": 2}']);

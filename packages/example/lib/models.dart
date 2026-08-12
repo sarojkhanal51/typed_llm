@@ -30,8 +30,11 @@ class Invoice {
 /// `_$InvoiceFromValidatedJson`.
 @LlmSchema()
 class LineItem {
-  LineItem(
-      {required this.sku, required this.quantity, required this.unitPrice});
+  LineItem({
+    required this.sku,
+    required this.quantity,
+    required this.unitPrice,
+  });
 
   final String sku;
   final int quantity;
@@ -49,8 +52,9 @@ enum InvoiceStatus { open, paid, overdue }
 @freezed
 @LlmSchema()
 abstract class ShippingAddress with _$ShippingAddress {
-  const factory ShippingAddress(
-      {required String street,
-      required String city,
-      required String postalCode}) = _ShippingAddress;
+  const factory ShippingAddress({
+    required String street,
+    required String city,
+    required String postalCode,
+  }) = _ShippingAddress;
 }

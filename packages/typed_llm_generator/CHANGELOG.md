@@ -1,3 +1,19 @@
+## 0.2.3
+
+Test-only release: no change to generated output. Nothing in `lib/` differs
+from 0.2.2, so upgrading is optional.
+
+- Line coverage 89.7% -> 98.4%, via tests for paths that had none:
+  - **Cycle detection**, which previously had no test at all. A class
+    referencing itself, and a `Parent` <-> `Child` pair, must both fail with
+    an actionable build error rather than recursing until the stack blows.
+  - A class used twice as a *sibling* (two fields of the same nested type)
+    must still generate — the guard tracks the current path, not every class
+    ever seen, and a regression here would break legal diamond-shaped models.
+  - `@LlmSchema` applied to a non-class, and a class with no unnamed
+    constructor.
+  - Nullable nested objects, and `List<Nested?>`.
+
 ## 0.2.2
 
 ### Fixed

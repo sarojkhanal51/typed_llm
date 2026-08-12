@@ -1,3 +1,20 @@
+## 0.2.1
+
+Test-only release: no API, behaviour, or dependency changes. Nothing in
+`lib/` differs from 0.2.0, so upgrading is optional.
+
+- Line coverage 93.7% -> 100%, via tests for paths that had none:
+  - Every `TypedLlmException` `toString()`, including the singular/plural
+    branch in `SchemaValidationException` ("after 1 retry" vs "after 2
+    retries"). These strings are often all a developer sees in a crash
+    report, so they are now pinned.
+  - A model returning a top-level JSON *array* or scalar instead of an
+    object. Models routinely wrap a single result in `[...]`; this now has a
+    regression test asserting it surfaces as `MalformedJsonException`, and
+    that the retry prompt tells the model an object was expected.
+  - `LlmField`'s defaults, which the generator reads when emitting schemas.
+  - Constructing a provider without the `httpClient` test seam.
+
 ## 0.2.0
 
 **Breaking:** `Extractor.extract` now takes a single generated `LlmType<T>`

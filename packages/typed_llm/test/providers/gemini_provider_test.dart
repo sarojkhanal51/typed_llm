@@ -154,4 +154,11 @@ void main() {
       );
     });
   });
+
+  test('constructs with a real http client when none is injected', () {
+    // The httpClient parameter is a test seam; omitting it must still yield a
+    // usable provider. No request is made here, so no network is touched.
+    expect(GeminiProvider(apiKey: 'k', model: 'gemini-2.0-flash'),
+        isA<LlmProvider>());
+  });
 }

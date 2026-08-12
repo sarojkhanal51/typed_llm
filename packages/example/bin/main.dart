@@ -32,7 +32,8 @@ Future<void> main() async {
   // See the "API keys" section of the README before shipping this pattern
   // in a client app: call your own backend proxy instead of embedding a key.
   final extractor = Extractor(
-      provider: OpenAiProvider(apiKey: apiKey, model: 'gpt-4o-2024-08-06'));
+    provider: OpenAiProvider(apiKey: apiKey, model: 'gpt-4o-2024-08-06'),
+  );
 
   try {
     final invoice = await extractor.extract(
@@ -52,12 +53,14 @@ Future<void> main() async {
           'Extract the shipping address from this text:\n\n$_sampleInvoiceText',
     );
     stdout.writeln(
-        'Ship to: ${address.street}, ${address.city} ${address.postalCode}');
+      'Ship to: ${address.street}, ${address.city} ${address.postalCode}',
+    );
   } on TypedLlmException catch (e) {
     switch (e) {
       case SchemaValidationException():
         stderr.writeln(
-            'The model could not produce valid output: ${e.errors.join('; ')}');
+          'The model could not produce valid output: ${e.errors.join('; ')}',
+        );
       case MalformedJsonException():
         stderr.writeln('The model did not return valid JSON: ${e.message}');
       case ProviderException():

@@ -435,6 +435,166 @@ class Order {
     });
   });
 
+  group('cyclic references', () {
+    test('a self-referencing class is a build error, not a hang', () async {
+      // Without the cycle guard the recursive planner would recurse until the
+      // stack blew. The error must name the cycle so the author can see it.
+      await _expectBuildError('lib/node.dart', '''
+import 'package:typed_llm/typed_llm.dart';
+
+@LlmSchema()
+class Node {
+  final String label;
+  final Node child;
+  Node({required this.label, required this.child});
+}
+''', allOf([contains('Cyclic'), contains('Node -> Node')]));
+    });
+
+    test('an indirect cycle through a second class is caught', () async {
+      await _expectBuildError(
+        'lib/pair.dart',
+        '''
+import 'package:typed_llm/typed_llm.dart';
+
+@LlmSchema()
+class Parent {
+  final Child child;
+  Parent({required this.child});
+}
+
+@LlmSchema()
+class Child {
+  final Parent parent;
+  Child({required this.parent});
+}
+''',
+        allOf([contains('Cyclic'), contains('Parent'), contains('Child')]),
+      );
+    });
+
+    test('the same class used twice as a sibling is not a cycle', () async {
+      // Diamond-shaped graphs are legal: the guard must track the current
+      // path, not every class it has ever visited.
+      await _expectGenerated(
+        'lib/shipment.dart',
+        '''
+import 'package:typed_llm/typed_llm.dart';
+
+@LlmSchema()
+class Address {
+  final String city;
+  Address({required this.city});
+}
+
+@LlmSchema()
+class Shipment {
+  final Address origin;
+  final Address destination;
+  Shipment({required this.origin, required this.destination});
+}
+''',
+        'lib/shipment.llm_schema.g.part',
+        [
+          "'origin': {'type': 'object'",
+          "'destination': {'type': 'object'",
+          "origin: Address(city: (json['origin'] as Map<String, dynamic>)['city'] as String)",
+        ],
+      );
+    });
+  });
+
+  group('nullable nested objects', () {
+    test('a nullable nested class is null-guarded in the factory', () async {
+      await _expectGenerated(
+        'lib/order.dart',
+        '''
+import 'package:typed_llm/typed_llm.dart';
+
+@LlmSchema()
+class Address {
+  final String city;
+  Address({required this.city});
+}
+
+@LlmSchema()
+class Order {
+  final Address? shipTo;
+  Order({this.shipTo});
+}
+''',
+        'lib/order.llm_schema.g.part',
+        [
+          "'shipTo': {'type': ['object', 'null']",
+          "shipTo: json['shipTo'] == null ? null : Address(",
+        ],
+      );
+    });
+
+    test('a list of nullable nested classes guards each element', () async {
+      await _expectGenerated(
+        'lib/manifest.dart',
+        '''
+import 'package:typed_llm/typed_llm.dart';
+
+@LlmSchema()
+class Stop {
+  final String code;
+  Stop({required this.code});
+}
+
+@LlmSchema()
+class Manifest {
+  final List<Stop?> stops;
+  Manifest({required this.stops});
+}
+''',
+        'lib/manifest.llm_schema.g.part',
+        [
+          'if (e == null) return null;',
+          'final map = e as Map<String, dynamic>;',
+          "return Stop(code: map['code'] as String);",
+        ],
+      );
+    });
+  });
+
+  group('annotation placement', () {
+    test('@LlmSchema on a non-class is an actionable build error', () async {
+      await _expectBuildError(
+        'lib/not_a_class.dart',
+        '''
+import 'package:typed_llm/typed_llm.dart';
+
+@LlmSchema()
+enum Colour { red, green }
+''',
+        allOf([contains('can only annotate classes'), contains('Colour')]),
+      );
+    });
+  });
+
+  group('constructor requirements', () {
+    test(
+      'a class with no unnamed constructor is an actionable error',
+      () async {
+        await _expectBuildError(
+          'lib/named_only.dart',
+          '''
+import 'package:typed_llm/typed_llm.dart';
+
+@LlmSchema()
+class NamedOnly {
+  final String value;
+  NamedOnly.create({required this.value});
+}
+''',
+          allOf([contains('no unnamed constructor'), contains('NamedOnly')]),
+        );
+      },
+    );
+  });
+
   group('unsupported types', () {
     test(
       'an unsupported field type produces an actionable build error',
